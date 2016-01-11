@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+        <meta charset="utf-8" />
+
+        <title>Demo Chat</title>
+
+        <link href="bootstrap.css" rel="stylesheet">
+
+	<style>
+		body {
+			padding:20px;
+		}
+		#console {
+			height: 400px;
+			overflow: auto;
+		}
+		.username-msg {color:orange;}
+		.connect-msg {color:green;}
+		.disconnect-msg {color:red;}
+		.send-msg {color:#888}
+	</style>
+
+
+	<script src="js/socket.io/socket.io.js"></script>
+        <script src="js/moment.min.js"></script>
+        <script src="js/jquery-1.7.2.min.js"></script>
+
+	<script>
+
+                var userName = 'user1'; // 换做为用户昵称
+
+		var socket =  io.connect('http://localhost:9092');
+
+		socket.on('connect', function() {
+			output('<span class="connect-msg">欢迎来到Hello world 聊天室!</span>');
+		});
+
+    // register
+    var userInfo = {'@class': 'com.corundumstudio.socketio.demo.ChatUser',
+                                          userName: userName,
+                                          openId: userName,
+                                          avatar: "https://www.baidu.com/img/bd_logo1.png",}; // 头像
+    socket.emit('register', userInfo);
+
+    // 更新上线信息---这个应该是页面中的独立一块！用户列表！
+    socket.on('online', function(data) {
+      output('<span class="username-msg">' + data.userName+"("+data.uuid+")" +" 上线！"+ '</span> ');
+    });
+    socket.on('list', function(data) {
+      output('<span class="username-msg">' + "用户列表："+ JSON.stringify(data)+ '</span> ');
+    });
+    // TODO:更新用户列表
+    //
+		socket.on('say', function(user,data) {
+			output('<span class="username-msg">' + user.userName + ':</span> ' + data.message);
+		});
+
+		socket.on('disconnect', function() {
+			output('<span class="disconnect-msg">离开聊天室系统!</span>');
+		});
+
+                function sendDisconnect() {
+                        socket.disconnect();
+                }
+
+		function sendMessage() {
+                        var message = $('#msg').val();
+                        $('#msg').val('');
+
+                        var jsonObject = {'@class': 'com.corundumstudio.socketio.demo.ChatObject',
+                                          targetUser: $("#targetUser").val(),
+                                          message: message};
+
+                        socket.emit('say', jsonObject, function(arg1, arg2) {
+                        });
+		}
+
+		function output(message) {
+                        var currentTime = "<span class='time'>" +  moment().format('HH:mm:ss.SSS') + "</span>";
+                        var element = $("<div>" + currentTime + " " + message + "</div>");
+			$('#console').prepend(element);
+		}
+
+	</script>
+</head>
+
+<body>
+
+	<h1>Netty-socketio Demo Chat</h1>
+
+	<br/>
+
+	<div id="console" class="well">
+	</div>
+
+        <form class="well form-inline" onsubmit="return false;">
+           <input id="msg" class="input-xlarge" type="text" placeholder="Type something..."/>
+           <label>目标用户：</label>  <input id="targetUser" type="text" value="" style="width:300px"/>
+           <button type="button" onClick="sendMessage()" class="btn">Send</button>
+           <button type="button" onClick="sendDisconnect()" class="btn">Disconnect</button>
+        </form>
+</body>
+
+</html>
